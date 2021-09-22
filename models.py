@@ -1,8 +1,11 @@
 #%%
 from transformers import ViTFeatureExtractor, ViTModel
+import torchvision
 from torch.nn import Module
 from torch import nn
 import torch as th
+import numpy as np
+from utils import overlay_predictions_on_images
 
 class RoadDetector(Module):
     def __init__(self, n_classes=3):
@@ -18,11 +21,32 @@ class RoadDetector(Module):
         bsize, _, height, width = inputs['pixel_values'].shape
         inputs = {k:inputs[k].to(device) for k in inputs.keys()}
         outputs = self.encoder(**inputs)
-        patch_encodings = outputs.last_hidden_state[:, 1:]
+        patch_encodings = outputs.last_hidden_state[:, 1:] 
         decoded_patchs = self.decoder(patch_encodings)
-        # n_patches, n_patches, self.patch_size, self.patch_size
         decoded_patchs = decoded_patchs.view(bsize, height, width, self.n_classes)
         return th.softmax(decoded_patchs, dim=-1)
+
+    def visualize(self, frame, device, middles=True):
+        if type(frame) != type(np.array([1])):
+            frame = np.array(frame)
+        img = th.tensor(frame.transpose(2, 0, 1))
+        img = torchvision.transforms.Resize((224, 224))(img).unsqueeze(0)
+        img = img.transpose(1, 3).transpose(1, 2)
+        with th.no_grad():
+            preds = self([frame], device)
+        overlaid = overlay_predictions_on_images(img, preds, alpha=0.7)
+        overlaid = overlaid[0].astype(np.uint8)
+
+        if middles:
+            pred = preds[0, :, :, 0].detach().cpu().numpy()
+            idxs = np.arange(len(pred))
+            idxs = np.tile(idxs, (len(pred[0]), 1))
+            line = (np.sum(pred*idxs, axis=1)/np.sum(pred, axis=1)).astype(np.uint8)
+            for i, j in enumerate(line):
+                overlaid[i, j] = (255, 0, 0)
+            return overlaid, preds, line
+
+        return overlaid, preds
 
 # %%
 if __name__ == '__main__':

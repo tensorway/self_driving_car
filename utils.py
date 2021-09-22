@@ -30,4 +30,14 @@ def overlay_predictions_on_images(imgs, preds, alpha=0.8):
         np.array([[[0, 255, 0]]])*(preds==0)*(1-alpha) + \
         np.array([[[0, 0, 255]]])*(preds==1)*(1-alpha)
     return viz
+
+def soft_overlay_predictions_on_images(imgs, preds, alpha=0.8):
+    base = [np.array(img) for img in imgs]
+    base = [np.expand_dims(img, axis=0) for img in imgs]
+    base = np.concatenate(base, axis=0)
+    preds = preds.detach().cpu().numpy()
+    viz = base * preds[:, :, :, 2:3] + \
+        np.array([[[0, 255, 0]]])*preds[:, :, :, 0:1] + \
+        np.array([[[0, 0, 255]]])*preds[:, :, :, 1:2]
+    return viz
 # %%

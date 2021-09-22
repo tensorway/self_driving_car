@@ -5,20 +5,21 @@ import torch as th
 from pathlib import Path
 from clearml import Task, Logger
 import torch.nn.functional as F
+import torchvision
 from models import RoadDetector
 from dataset import SelfDrivingDataset
 from torch.utils.data import DataLoader
 from transforms import img_transfrom_train, label_transfrom_train
 from utils import load_model, save_model, collate, overlay_predictions_on_images
 
-MODEL_CHECKPOINTS_PATH = Path('model_checkpoints')
+MODEL_CHECKPOINTS_PATH = Path('/home/darijan/Downloads')
 MODEL_NAME = 'vit'
 MODEL_PATH = MODEL_CHECKPOINTS_PATH/('model_'+MODEL_NAME+'.pt')
 OPTIMIZER_PATH = MODEL_CHECKPOINTS_PATH/('optimizer_'+MODEL_NAME+'.pt')
 SAVE_DELTA = 20*60 #in seconds
 
-task = Task.init(project_name="Self driving car", task_name="test")
-logger = Logger.current_logger()
+# task = Task.init(project_name="Self driving car", task_name="test")
+# logger = Logger.current_logger()
 
 #%%
 train_dataset = SelfDrivingDataset(
@@ -56,13 +57,13 @@ print("using", device)
 
 # %%
 model = RoadDetector()
+load_model(model, str(MODEL_PATH))
+model.to(device);
+#%%%
 opt = th.optim.Adam([
     {'params':model.parameters(), 'lr':1e-4},
 ])
-load_model(model, str(MODEL_PATH))
 load_model(opt, str(OPTIMIZER_PATH))
-model.to(device);
-
 # %%
 step = 0
 t_last_save = time.time()
@@ -107,25 +108,3 @@ for ep in range(10):
             save_model(opt, str(OPTIMIZER_PATH))
 
         step += 1
-
-# # %%
-# for i in range(100):
-#     logger.report_scalar("test", "a", iteration=i, value=1./(i+1))
-# #%%
-# import random
-# idx = random.randint(0, len(valid_dataset))
-# a, b = valid_dataset[idx]
-# print(idx)
-# import matplotlib.pyplot as plt
-# plt.imshow(b[0].numpy())
-# a
-# # %%
-# alpha = 0.8
-# b = b.numpy().transpose(1, 2, 0)
-# a = np.array(a)
-# viz = a * (b==2) + \
-#       a*alpha*(b!=2) + \
-#       np.array([[[0, 255, 0]]])*(b==0)*(1-alpha) + \
-#       np.array([[[0, 0, 255]]])*(b==1)*(1-alpha)
-
-# plt.imshow(viz.astype(np.uint8))
