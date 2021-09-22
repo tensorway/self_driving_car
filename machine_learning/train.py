@@ -5,12 +5,11 @@ import torch as th
 from pathlib import Path
 from clearml import Task, Logger
 import torch.nn.functional as F
-import torchvision
-from models import RoadDetector
-from dataset import SelfDrivingDataset
+from .models import RoadDetector
+from .dataset import SelfDrivingDataset
 from torch.utils.data import DataLoader
-from transforms import img_transfrom_train, label_transfrom_train
-from utils import load_model, save_model, collate, overlay_predictions_on_images
+from .transforms import img_transfrom_train, label_transfrom_train
+from .utils import load_model, save_model, collate, overlay_predictions_on_images
 
 MODEL_CHECKPOINTS_PATH = Path('/home/darijan/Downloads')
 MODEL_NAME = 'vit'
