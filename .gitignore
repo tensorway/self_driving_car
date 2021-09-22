@@ -131,6 +131,5 @@ dmypy.json
 #dataset
 dataset/*
 model_checkpoints/*
-assets/*
 realworld_outputs/*
 realworld_eval_data/*
