@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 #dataset
-dataset/*
-model_checkpoints/*
-realworld_outputs/*
-realworld_eval_data/*
+*/dataset/*
+*/model_checkpoints/*
+*/realworld_outputs/*
+*/realworld_eval_data/*
