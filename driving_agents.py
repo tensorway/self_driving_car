@@ -4,11 +4,17 @@ import cv2
 from machine_learning.models import RoadDetector
 from machine_learning.utils import load_model
 from PIL import Image
+import random
 
 class Base:
+    '''
+    simple base for agents
+    provides visualization and model loading
+    '''
     def __init__(self, device):
         self.model = RoadDetector()
-        load_model(self.model, 'model_checkpoints/model_vit.pt')
+        load_model(self.model, 'machine_learning/model_checkpoints/model_vit.pt')
+        self.model.eval()
         self.model.to(device)
         self.device = device
         self.arrow_right = np.array(Image.open('assets/arrow_right.png').convert('RGBA'))
@@ -35,6 +41,16 @@ class Base:
                         overlaid[i, -j+midpoint, :] = arrow[i, j, :3] 
 
         return diff, overlaid
+
+class RandomAgent(Base):
+    '''
+    random for degubbing
+    '''
+    def __init__(self, device):
+        super().__init__(device)
+
+    def predict(self, img, visualize=False):
+        return (random.random()-0.5)*3.14/10
     
 class LineFollower(Base):
     '''
@@ -51,10 +67,31 @@ class LineFollower(Base):
 
     def predict(self, img, visualize=False):
         overlaid, _, line = self.model.visualize(img, self.device)
-        diff = line[150:175].mean() - 224/2 
+        diff = line[175:200].mean() - 224/2 
         if visualize:
             return diff*self.coeff, overlaid
         return diff*self.coeff
 
+class CenterOfMassFollower(Base):
+    '''
+    tracks center of mass of predicted road
+    If the center is left from the center
+    of the car it goes left
+    if it is right it goes right
+    if it is in the center it goes straight
+    '''
+    def __init__(self, device, coeff=1) -> None:
+        super().__init__(device)
+        self.coeff = coeff
+
+    def predict(self, img, visualize=False):
+        overlaid, preds, line = self.model.visualize(img, self.device)
+        pred = preds[0, :, :, 0].detach().cpu().numpy()
+        pred += preds[0, :, :, 1].detach().cpu().numpy()
+        weights = np.sum(pred, axis=1)
+        diff = (line@weights)/np.sum(weights) - 224/2 
+        if visualize:
+            return diff*self.coeff, overlaid
+        return diff*self.coeff
 
 # %%

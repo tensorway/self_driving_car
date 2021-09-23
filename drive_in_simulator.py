@@ -1,84 +1,55 @@
+'''
+a script adapted from
+https://github.com/udacity/CarND-Behavioral-Cloning-P3
+used to test the driving in the simulator
+'''
 #%%
 import argparse
 import base64
 from datetime import datetime
 import os
 import shutil
-import torch as th
-import numpy as np
 import socketio
 import eventlet
 import eventlet.wsgi
 from PIL import Image
 from flask import Flask
 from io import BytesIO
-from models import Driver
-from dataset import transform
+from driving_agents import CenterOfMassFollower as Agent
+import logging
 import torch
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("using", device)
+print("using" + str(device))
+
+# logging.basicConfig(
+#     format='%(asctime)s:%(levelname)s:%(message)s',
+#     filename='simulator_driving.log', 
+#     encoding='utf8', 
+#     level=logging.DEBUG)
 
 #%%
-import h5py
-
 sio = socketio.Server()
 app = Flask(__name__)
 model = None
 prev_image_array = None
 
-
-
-class SimplePIController:
-    def __init__(self, Kp, Ki):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.set_point = 0.
-        self.error = 0.
-        self.integral = 0.
-
-    def set_desired(self, desired):
-        self.set_point = desired
-
-    def update(self, measurement):
-        # proportional error
-        self.error = self.set_point - measurement
-
-        # integral error
-        self.integral += self.error
-
-        return self.Kp * self.error + self.Ki * self.integral
-
-
-controller = SimplePIController(0.1, 0.002)
-set_speed = 9
-controller.set_desired(set_speed)
-
-
 @sio.on('telemetry')
 def telemetry(sid, data):
-    print("in telem")
     if data:
         try:
-            print("in data")
-            # The current steering angle of the car
-            steering_angle = data["steering_angle"]
-            # The current throttle of the car
-            throttle = data["throttle"]
-            # The current speed of the car
-            speed = data["speed"]
-            throttle = controller.update(float(speed))
             # The current image from the center camera of the car
             imgString = data["image"]
             image = Image.open(BytesIO(base64.b64decode(imgString)))
-            img = transform(image).unsqueeze(0).to(device)
-            steering_angle = model(1, img, 1).cpu().item()
-            throttle = 0.1
-
-
-            print(steering_angle, throttle)
+            steering_angle = agent.predict(image)
+            speed = data["speed"]
+            throttle = 2 * (10-float(speed))/10
+            angl = data["steering_angle"]
+            # print(f"predicted_sangle={steering_angle:5.4f}      curr_angle={angl:5.4f}        throttle={throttle:5.4f}")
+            print(angl, steering_angle, throttle)
             send_control(steering_angle, throttle)
         except Exception as e:
-            print(e)
+            print(str(e))
 
         # save frame
         if args.image_folder != '':
@@ -92,7 +63,7 @@ def telemetry(sid, data):
 
 @sio.on('connect')
 def connect(sid, environ):
-    print("connect ", sid)
+    print("connect " + str(sid))
     send_control(0, 0)
 
 
@@ -117,23 +88,23 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    model = Driver([1280, 1]).to(device)
-    model.load_state_dict(th.load("model.pt"))
-    model.eval()
+    agent = Agent(device, 1/100*3.14)
 
     if args.image_folder != '':
-        print("Creating image folder at {}".format(args.image_folder))
+        logging.info("Creating image folder at {}".format(args.image_folder))
         if not os.path.exists(args.image_folder):
             os.makedirs(args.image_folder)
         else:
             shutil.rmtree(args.image_folder)
             os.makedirs(args.image_folder)
-        print("RECORDING THIS RUN ...")
+        logging.info("RECORDING THIS RUN ...")
     else:
-        print("NOT RECORDING THIS RUN ...")
+        logging.info("NOT RECORDING THIS RUN ...")
 
     # wrap Flask application with engineio's middleware
     app = socketio.Middleware(sio, app)
 
     # deploy as an eventlet WSGI server
     eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
+
+# %%

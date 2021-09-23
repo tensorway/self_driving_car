@@ -5,7 +5,7 @@ from torch.nn import Module
 from torch import nn
 import torch as th
 import numpy as np
-from utils import overlay_predictions_on_images
+from .utils import overlay_predictions_on_images
 
 class RoadDetector(Module):
     def __init__(self, n_classes=3):
@@ -39,6 +39,7 @@ class RoadDetector(Module):
 
         if middles:
             pred = preds[0, :, :, 0].detach().cpu().numpy()
+            pred += preds[0, :, :, 1].detach().cpu().numpy()
             idxs = np.arange(len(pred))
             idxs = np.tile(idxs, (len(pred[0]), 1))
             line = (np.sum(pred*idxs, axis=1)/np.sum(pred, axis=1)).astype(np.uint8)
