@@ -43,7 +43,7 @@ def telemetry(sid, data):
             image = Image.open(BytesIO(base64.b64decode(imgString)))
             steering_angle = agent.predict(image)
             speed = data["speed"]
-            throttle = 2 * (10-float(speed))/10
+            throttle = 1 * (10-float(speed))/10
             angl = data["steering_angle"]
             # print(f"predicted_sangle={steering_angle:5.4f}      curr_angle={angl:5.4f}        throttle={throttle:5.4f}")
             print(angl, steering_angle, throttle)
