@@ -15,6 +15,12 @@ class Controller:
         self.serial.write("\r\n\r\n".encode())
         # Wait for grbl to initialize 
         time.sleep(2)  
+        self.serial.flushInput()  # Flush startup text in serial input
+        self.hold_place()
+
+    def hold_place(self):
+        # it holds place after every command
+        print("hold place", self.send("$1=255"))
 
     def get_device(self):
         '''
@@ -33,13 +39,15 @@ class Controller:
         Y = f'Y{y}' if y is not None else ''
         line = f"G1 {X} {Y} F{speed}" #XYgoto Fspeed
         # line = "G92 X0 Y0" # zero
-        return self.send(line)
+        r = self.send(line)
+        # self.hold_place()
+        return r
 
     def home(self):
         self.send("G28")
 
     def zero(self):
-        self.send("G92 X0 Y0")
+        return self.send("G92 X0 Y0")
 
     def send(self, line):
         logging.debug('Sending: ' + line),
@@ -61,10 +69,16 @@ if __name__ == '__main__':
     logging.basicConfig(
         format='%(asctime)s:%(levelname)s:%(message)s',
         filename='example.log', 
-        encoding='utf8', 
         level=logging.DEBUG)
     controller = Controller()
     controller.zero()
-    print(controller.move(15, 10))
+    print(controller.move(1, 1))
+    # print(controller.hold_place())
 
-# %%
+    # %%
+    controller.close()
+    # %%
+    # %%
+    for i in range(100):
+        print(i)
+        

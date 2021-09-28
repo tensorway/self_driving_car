@@ -16,6 +16,7 @@ from PIL import Image
 from flask import Flask
 from io import BytesIO
 from driving_agents import CenterOfMassFollower as Agent
+from actuation import Controller
 import logging
 import torch
 
@@ -46,6 +47,7 @@ def telemetry(sid, data):
             throttle = 1 * (10-float(speed))/10
             angl = data["steering_angle"]
             # print(f"predicted_sangle={steering_angle:5.4f}      curr_angle={angl:5.4f}        throttle={throttle:5.4f}")
+            controller.move(steering_angle*3, steering_angle*3)
             print(angl, steering_angle, throttle)
             send_control(steering_angle, throttle)
         except Exception as e:
@@ -89,6 +91,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     agent = Agent(device, 1/100*3.14)
+    controller = Controller()
+    controller.zero()
+
 
     if args.image_folder != '':
         logging.info("Creating image folder at {}".format(args.image_folder))
