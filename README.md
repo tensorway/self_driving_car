@@ -7,6 +7,10 @@ The code:
 
 The power to drive the stepper motors is received through modified car phone charger
 
+![video1](assets/video0.gif)
+![video1](assets/video1.gif)
+![video1](assets/car.jpg)
+A photo of a car with gopro and videos of driving (by a human)
 
 
 
