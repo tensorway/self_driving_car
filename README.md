@@ -21,3 +21,5 @@ A photo of a car with gopro and videos of driving (by a human)
 - drive_in_simulator.py -> the progam to use udacity self driving simulator to test strategies
 - actuation.py -> code to control stepper motors which control the steering wheel
 - start_gopro.py -> simple script to start receiving gopro frames over Wifi
+
+works in simulation but needs stronger motors for real world.
